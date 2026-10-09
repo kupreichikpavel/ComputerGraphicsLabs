@@ -1,139 +1,139 @@
 .root {
-  -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  -fx-font-size: 13px;
-  -fx-background-color: #f4f6f8;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f4f6f8;
 }
 
 .top-bar {
-  -fx-padding: 12 14 12 14;
-  -fx-background-color: white;
-  -fx-border-color: transparent transparent #d9dee5 transparent;
+    -fx-padding: 12 14 12 14;
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #d9dee5 transparent;
 }
 
 .button {
-  -fx-background-color: white;
-  -fx-border-color: #c9d1db;
-  -fx-border-radius: 6;
-  -fx-background-radius: 6;
-  -fx-text-fill: #1f2933;
-  -fx-padding: 7 16 7 16;
-  -fx-cursor: hand;
+    -fx-background-color: white;
+    -fx-border-color: #c9d1db;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: #1f2933;
+    -fx-padding: 7 16 7 16;
+    -fx-cursor: hand;
 }
 
 .button:hover {
-  -fx-background-color: #eef1f5;
+    -fx-background-color: #eef1f5;
 }
 
 .button.primary {
-  -fx-border-color: transparent;
-  -fx-background-color: #2357c6;
-  -fx-text-fill: white;
-  -fx-font-weight: bold;
-  -fx-background-radius: 6;
-  -fx-padding: 7 16 7 16;
-  -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-background-color: #2357c6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 7 16 7 16;
+    -fx-cursor: hand;
 }
 
 .button.primary:hover {
-  -fx-background-color: #1c48a6;
+    -fx-background-color: #1c48a6;
 }
 
 .button.primary:disabled {
-  -fx-opacity: 0.5;
+    -fx-opacity: 0.5;
 }
 
 .progress-bar > .track {
-  -fx-background-color: #e3e7ec;
-  -fx-background-radius: 4;
-  -fx-background-insets: 0;
+    -fx-background-color: #e3e7ec;
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
 }
 
 .progress-bar > .bar {
-  -fx-background-color: #2357c6;
-  -fx-background-radius: 4;
-  -fx-background-insets: 0;
+    -fx-background-color: #2357c6;
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
 }
 
 .label {
-  -fx-text-fill: #1f2933;
+    -fx-text-fill: #1f2933;
 }
 
 .table-view {
-  -fx-background-color: white;
-  -fx-border-color: transparent;
-  -fx-padding: 0;
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
 }
 
 .table-view .column-header,
 .table-view .filler {
-  -fx-background-color: #eef1f5;
-  -fx-border-color: transparent #d9dee5 #d9dee5 transparent;
-  -fx-size: 34;
+    -fx-background-color: #eef1f5;
+    -fx-border-color: transparent #d9dee5 #d9dee5 transparent;
+    -fx-size: 34;
 }
 
 .table-view .column-header .label {
-  -fx-font-weight: bold;
-  -fx-text-fill: #3b4652;
+    -fx-font-weight: bold;
+    -fx-text-fill: #3b4652;
 }
 
 .table-row-cell {
-  -fx-background-color: white;
-  -fx-cell-size: 30;
+    -fx-background-color: white;
+    -fx-cell-size: 30;
 }
 
 .table-row-cell:odd {
-  -fx-background-color: #f8f9fb;
+    -fx-background-color: #f8f9fb;
 }
 
 .table-row-cell:hover {
-  -fx-background-color: #e8effc;
+    -fx-background-color: #e8effc;
 }
 
 .table-row-cell:selected {
-  -fx-background-color: #2357c6;
+    -fx-background-color: #2357c6;
 }
 
 .table-row-cell:selected .table-cell {
-  -fx-text-fill: white;
+    -fx-text-fill: white;
 }
 
 .table-cell {
-  -fx-padding: 0 10 0 10;
-  -fx-alignment: CENTER_LEFT;
-  -fx-border-color: transparent;
-  -fx-text-fill: #1f2933;
+    -fx-padding: 0 10 0 10;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-color: transparent;
+    -fx-text-fill: #1f2933;
 }
 
 .details, .details > .viewport {
-  -fx-background-color: white;
+    -fx-background-color: white;
 }
 
 .details-title {
-  -fx-font-size: 17px;
-  -fx-font-weight: bold;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
 }
 
 .preview {
-  -fx-background-color: #eceff3;
-  -fx-background-radius: 6;
-  -fx-padding: 8;
+    -fx-background-color: #eceff3;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
 }
 
 .prop-name {
-  -fx-font-weight: bold;
+    -fx-font-weight: bold;
 }
 
 .prop-value {
-  -fx-font-size: 14px;
+    -fx-font-size: 14px;
 }
 
 .muted {
-  -fx-text-fill: #66717f;
-  -fx-font-size: 12px;
+    -fx-text-fill: #66717f;
+    -fx-font-size: 12px;
 }
 
 .section-title {
-  -fx-font-size: 15px;
-  -fx-font-weight: bold;
-  -fx-padding: 8 0 0 0;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0 0 0;
 }

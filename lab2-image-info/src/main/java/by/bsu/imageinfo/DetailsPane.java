@@ -68,8 +68,9 @@ public final class DetailsPane extends ScrollPane {
         path.setWrapText(true);
 
         content.getChildren().addAll(new VBox(2, title, path), preview(info),
-                row("Статус", info.status(), "OK — заголовок прочитан; «Повреждён» — заголовок прочитать не удалось; "
-                        + "«Не изображение» — сигнатура файла не относится к поддерживаемым форматам."),
+                row("Статус", info.status(), "OK — заголовок прочитан, данные не выходят за конец файла; «Повреждён» — "
+                        + "заголовок не читается или файл обрезан (нет IEND в PNG, EOI в JPEG, трейлера 0x3B в GIF, "
+                        + "палитры в конце PCX, полоса TIFF за концом файла); «Не изображение» — сигнатура не из шести форматов."),
                 row("Формат", text(info.format()), "Определяется по сигнатуре в первых байтах файла, а не по расширению: "
                         + "BMP — «BM», PNG — 89 50 4E 47, JPEG — FF D8 FF, GIF — «GIF8», TIFF — «II» или «MM», PCX — 0A."),
                 row("Размер изображения", info.size() == null ? "—" : info.size() + " пикселей",

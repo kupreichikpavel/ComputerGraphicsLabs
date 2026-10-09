@@ -59,7 +59,7 @@ public class MainApp extends Application {
     private final Button filesButton = new Button("Выбрать файлы…");
     private final Button removeButton = new Button("Убрать из списка");
     private final Spinner<Integer> threadsSpinner =
-        new Spinner<>(1, 64, Runtime.getRuntime().availableProcessors() * 2);
+            new Spinner<>(1, 64, Runtime.getRuntime().availableProcessors() * 2);
     private final ProgressBar progress = new ProgressBar(0);
     private final Label statusLabel = new Label("Выберите папку или файлы");
     private Timeline timer;
@@ -105,9 +105,9 @@ public class MainApp extends Application {
         filesButton.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
             chooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Изображения",
-                    "*.jpg", "*.jpeg", "*.gif", "*.tif", "*.tiff", "*.bmp", "*.png", "*.pcx"),
-                new FileChooser.ExtensionFilter("Все файлы", "*.*"));
+                    new FileChooser.ExtensionFilter("Изображения",
+                            "*.jpg", "*.jpeg", "*.gif", "*.tif", "*.tiff", "*.bmp", "*.png", "*.pcx"),
+                    new FileChooser.ExtensionFilter("Все файлы", "*.*"));
             List<File> chosen = chooser.showOpenMultipleDialog(stage);
             if (chosen != null) {
                 Set<Path> already = new HashSet<>();

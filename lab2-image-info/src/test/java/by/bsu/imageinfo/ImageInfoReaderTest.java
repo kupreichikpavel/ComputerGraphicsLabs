@@ -58,6 +58,24 @@ class ImageInfoReaderTest {
     }
 
     @Test
+    void truncatedFileIsCorrupted() throws IOException {
+        Path png = dir.resolve("full.png");
+        ImageIO.write(new BufferedImage(40, 30, BufferedImage.TYPE_INT_RGB), "png", png.toFile());
+        byte[] bytes = Files.readAllBytes(png);
+        Path cut = dir.resolve("cut.png");
+        Files.write(cut, java.util.Arrays.copyOf(bytes, bytes.length - 12));
+        assertEquals("Повреждён", reader.read(cut).status());
+    }
+
+    @Test
+    void formatIsDetectedBySignatureNotExtension() throws IOException {
+        Path png = dir.resolve("photo.png");
+        ImageIO.write(new BufferedImage(40, 30, BufferedImage.TYPE_INT_RGB), "png", png.toFile());
+        Path renamed = Files.move(png, dir.resolve("photo.jpg"));
+        assertEquals("PNG", reader.read(renamed).format());
+    }
+
+    @Test
     void textFileIsNotAnImage() throws IOException {
         Path file = dir.resolve("fake.jpg");
         Files.writeString(file, "это не картинка\n".repeat(20));

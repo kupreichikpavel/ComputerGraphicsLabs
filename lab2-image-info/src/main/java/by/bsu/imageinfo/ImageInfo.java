@@ -4,15 +4,15 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public record ImageInfo(
-    Path path,
-    String format,
-    Integer width,
-    Integer height,
-    Integer dpi,
-    Integer bitDepth,
-    String compression,
-    String status,
-    Map<String, String> extras
+        Path path,
+        String format,
+        Integer width,
+        Integer height,
+        Integer dpi,
+        Integer bitDepth,
+        String compression,
+        String status,
+        Map<String, String> extras
 ) {
 
     public static ImageInfo failed(Path path, String status) {
