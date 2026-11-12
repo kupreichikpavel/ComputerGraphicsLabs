@@ -3,7 +3,7 @@ package by.bsu.imageinfo.parser;
 import java.io.IOException;
 
 public final class FormatDetector {
-
+//первые байты файла
     private FormatDetector() {
     }
 

@@ -24,6 +24,11 @@ jobs:
             main-class: by.bsu.imageinfo.Launcher
             description: "Image file metadata reader"
 
+          - project: lab3-image-processing
+            app-name: ImageProcessing
+            main-class: by.bsu.imageproc.Launcher
+            description: "Thresholding and segmentation"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

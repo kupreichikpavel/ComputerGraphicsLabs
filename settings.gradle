@@ -2,3 +2,4 @@ rootProject.name = 'computer-graphics-labs'
 
 include 'lab1-color-converter'
 include 'lab2-image-info'
+include 'lab3-image-processing'

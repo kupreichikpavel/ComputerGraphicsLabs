@@ -7,6 +7,7 @@ Gradle Wrapper и CI общие для всего репозитория.
 |---|------|-------|
 | 1 | Цветовые модели (CMYK ↔ LAB ↔ RGB) | [lab1-color-converter](lab1-color-converter) |
 | 2 | Чтение информации из графических файлов | [lab2-image-info](lab2-image-info) |
+| 3 | Пороговая обработка и сегментация изображений (вариант 9) | [lab3-image-processing](lab3-image-processing) |
 
 ## Сборка и запуск
 
