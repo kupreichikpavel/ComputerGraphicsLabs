@@ -100,7 +100,7 @@ class ThresholdTest {
             }
         }
         GrayImage image = new GrayImage(w, h, data);
-        GrayImage adaptive = AdaptiveThreshold.meanMinusC(image, 10, 5, EdgeMode.REFLECT, Progress.NONE).gray();
+        GrayImage adaptive = AdaptiveThreshold.sauvola(image, 10, 0.2, EdgeMode.REFLECT, Progress.NONE).gray();
         GrayImage global = GlobalThreshold.applyOtsu(image, Progress.NONE).gray();
         int adaptiveErrors = 0;
         int globalErrors = 0;

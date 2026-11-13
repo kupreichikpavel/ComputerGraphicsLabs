@@ -21,54 +21,24 @@ class FilterTest {
         return new GrayImage(width, height, data);
     }
 
-    private static GrayImage flat(int width, int height, int value) {
-        int[] data = new int[width * height];
-        java.util.Arrays.fill(data, value);
-        return new GrayImage(width, height, data);
-    }
-
     @Test
     void windowShapesHaveExpectedSizes() {
+        assertEquals(9, WindowShape.SQUARE.of(1).size());
         assertEquals(25, WindowShape.SQUARE.of(2).size());
-        assertEquals(9, WindowShape.CROSS.of(2).size());
         assertEquals(9, WindowShape.DISK.of(1).size());
         assertEquals(21, WindowShape.DISK.of(2).size());
     }
 
     @Test
-    void medianOfHandMadeWindow() {
+    void medianMinMaxOfHandMadeWindow() {
         GrayImage image = new GrayImage(3, 3, new int[]{
                 12, 15, 14,
                 255, 13, 16,
                 0, 14, 15});
-        GrayImage median = OrderFilter.huang(image, WindowShape.SQUARE.of(1), Statistic.MEDIAN, EdgeMode.CLAMP,
-                Progress.NONE);
-        assertEquals(14, median.get(1, 1));
-        GrayImage min = OrderFilter.huang(image, WindowShape.SQUARE.of(1), Statistic.MIN, EdgeMode.CLAMP, Progress.NONE);
-        GrayImage max = OrderFilter.huang(image, WindowShape.SQUARE.of(1), Statistic.MAX, EdgeMode.CLAMP, Progress.NONE);
-        assertEquals(0, min.get(1, 1));
-        assertEquals(255, max.get(1, 1));
-    }
-
-    @Test
-    void huangEqualsNaiveSorting() {
-        GrayImage image = random(37, 29, 7);
-        Statistic[] statistics = {Statistic.MEDIAN, Statistic.MIN, Statistic.MAX, Statistic.MIDPOINT,
-                Statistic.alphaTrimmed(0), Statistic.alphaTrimmed(0.2), Statistic.alphaTrimmed(0.45),
-                Statistic.percentile(0.1), Statistic.percentile(0.9)};
-        for (WindowShape shape : WindowShape.values()) {
-            for (int r = 1; r <= 4; r++) {
-                for (Statistic statistic : statistics) {
-                    for (EdgeMode mode : EdgeMode.values()) {
-                        WindowShape.Window window = shape.of(r);
-                        assertArrayEquals(
-                                OrderFilter.naive(image, window, statistic, mode, Progress.NONE).data(),
-                                OrderFilter.huang(image, window, statistic, mode, Progress.NONE).data(),
-                                shape + " r=" + r + " " + statistic + " " + mode);
-                    }
-                }
-            }
-        }
+        WindowShape.Window window = WindowShape.SQUARE.of(1);
+        assertEquals(14, OrderFilter.apply(image, window, OrderFilter.Rank.MEDIAN, EdgeMode.CLAMP, Progress.NONE).get(1, 1));
+        assertEquals(0, OrderFilter.apply(image, window, OrderFilter.Rank.MIN, EdgeMode.CLAMP, Progress.NONE).get(1, 1));
+        assertEquals(255, OrderFilter.apply(image, window, OrderFilter.Rank.MAX, EdgeMode.CLAMP, Progress.NONE).get(1, 1));
     }
 
     @Test
@@ -87,30 +57,9 @@ class FilterTest {
                 data[y * w + x] = (x + y) % 2 == 0 ? 255 : 0;
             }
         }
-        GrayImage result = OrderFilter.huang(new GrayImage(w, h, data), WindowShape.SQUARE.of(1), Statistic.MEDIAN,
-                EdgeMode.REFLECT, Progress.NONE);
+        GrayImage result = OrderFilter.apply(new GrayImage(w, h, data), WindowShape.SQUARE.of(1),
+                OrderFilter.Rank.MEDIAN, EdgeMode.REFLECT, Progress.NONE);
         assertArrayEquals(clean, result.data());
-    }
-
-    @Test
-    void alphaTrimmedLimitsAreMeanAndMedian() {
-        GrayImage image = random(21, 17, 3);
-        WindowShape.Window window = WindowShape.SQUARE.of(1);
-        GrayImage trimmedZero = OrderFilter.huang(image, window, Statistic.alphaTrimmed(0), EdgeMode.REFLECT, Progress.NONE);
-        GrayImage trimmedMax = OrderFilter.huang(image, window, Statistic.alphaTrimmed(0.49), EdgeMode.REFLECT, Progress.NONE);
-        GrayImage median = OrderFilter.huang(image, window, Statistic.MEDIAN, EdgeMode.REFLECT, Progress.NONE);
-        for (int y = 0; y < image.height(); y++) {
-            for (int x = 0; x < image.width(); x++) {
-                long sum = 0;
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        sum += image.get(x + dx, y + dy, EdgeMode.REFLECT);
-                    }
-                }
-                assertEquals((sum + 4) / 9, trimmedZero.get(x, y));
-            }
-        }
-        assertArrayEquals(median.data(), trimmedMax.data());
     }
 
     @Test
@@ -125,7 +74,7 @@ class FilterTest {
                 int max = 0;
                 for (int dy = -2; dy <= 2; dy++) {
                     for (int dx = -2; dx <= 2; dx++) {
-                        if (window.contains(dx, dy)) {
+                        if (dx * dx + dy * dy <= 6) {
                             int v = image.get(x + dx, y + dy, EdgeMode.CLAMP);
                             min = Math.min(min, v);
                             max = Math.max(max, v);
@@ -142,12 +91,10 @@ class FilterTest {
     void openingAndClosingAreIdempotent() {
         GrayImage image = random(30, 24, 5);
         WindowShape.Window window = WindowShape.SQUARE.of(1);
-        GrayImage opened = Morphology.apply(image, Morphology.Operation.OPENING, window, EdgeMode.REFLECT, Progress.NONE);
-        GrayImage twice = Morphology.apply(opened, Morphology.Operation.OPENING, window, EdgeMode.REFLECT, Progress.NONE);
-        assertArrayEquals(opened.data(), twice.data());
-        GrayImage closed = Morphology.apply(image, Morphology.Operation.CLOSING, window, EdgeMode.REFLECT, Progress.NONE);
-        GrayImage closedTwice = Morphology.apply(closed, Morphology.Operation.CLOSING, window, EdgeMode.REFLECT, Progress.NONE);
-        assertArrayEquals(closed.data(), closedTwice.data());
+        GrayImage opened = Morphology.opening(image, window, EdgeMode.REFLECT, Progress.NONE);
+        assertArrayEquals(opened.data(), Morphology.opening(opened, window, EdgeMode.REFLECT, Progress.NONE).data());
+        GrayImage closed = Morphology.closing(image, window, EdgeMode.REFLECT, Progress.NONE);
+        assertArrayEquals(closed.data(), Morphology.closing(closed, window, EdgeMode.REFLECT, Progress.NONE).data());
     }
 
     @Test
@@ -175,33 +122,21 @@ class FilterTest {
     }
 
     @Test
-    void adaptiveMedianHandlesDenseNoise() {
-        GrayImage clean = flat(80, 60, 120);
-        GrayImage noisy = Noise.add(clean, Noise.Kind.SALT_PEPPER, 50, 42);
-        GrayImage adaptive = AdaptiveMedian.filter(noisy, 5, EdgeMode.REFLECT, Progress.NONE, null);
-        GrayImage median = OrderFilter.huang(noisy, WindowShape.SQUARE.of(1), Statistic.MEDIAN, EdgeMode.REFLECT,
-                Progress.NONE);
-        int restored = 0;
-        int restoredByMedian = 0;
-        for (int i = 0; i < clean.data().length; i++) {
-            restored += adaptive.data()[i] == 120 ? 1 : 0;
-            restoredByMedian += median.data()[i] == 120 ? 1 : 0;
-        }
-        assertTrue(restored > 0.99 * clean.data().length, "restored " + restored);
-        assertTrue(restoredByMedian < restored);
-    }
-
-    @Test
-    void separableConvolutionEqualsFull2d() {
-        RealImage image = RealImage.of(random(31, 23, 9));
-        double[] k = Convolution.gaussian1d(1.5);
-        for (EdgeMode mode : EdgeMode.values()) {
-            double[] separable = Convolution.separable(image, k, mode, Progress.NONE).data();
-            double[] full = Convolution.apply(image, Kernel.outer(k), mode, Progress.NONE).data();
-            for (int i = 0; i < full.length; i++) {
-                assertEquals(full[i], separable[i], 1e-9);
+    void gradientIsZeroInsideFlatRegions() {
+        int w = 30;
+        int h = 20;
+        int[] data = new int[w * h];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                data[y * w + x] = x < 15 ? 50 : 200;
             }
         }
+        GrayImage g = Morphology.apply(new GrayImage(w, h, data), Morphology.Operation.GRADIENT,
+                WindowShape.SQUARE.of(1), EdgeMode.REFLECT, Progress.NONE);
+        assertEquals(0, g.get(5, 10));
+        assertEquals(0, g.get(25, 10));
+        assertEquals(150, g.get(14, 10));
+        assertEquals(150, g.get(15, 10));
     }
 
     @Test
@@ -210,30 +145,14 @@ class FilterTest {
         int before = Parallel.threads();
         try {
             Parallel.setThreads(1);
-            int[] single = OrderFilter.huang(image, WindowShape.DISK.of(3), Statistic.MEDIAN, EdgeMode.REFLECT,
+            int[] single = OrderFilter.apply(image, WindowShape.DISK.of(3), OrderFilter.Rank.MEDIAN, EdgeMode.REFLECT,
                     Progress.NONE).data();
             Parallel.setThreads(6);
-            int[] parallel = OrderFilter.huang(image, WindowShape.DISK.of(3), Statistic.MEDIAN, EdgeMode.REFLECT,
+            int[] parallel = OrderFilter.apply(image, WindowShape.DISK.of(3), OrderFilter.Rank.MEDIAN, EdgeMode.REFLECT,
                     Progress.NONE).data();
             assertArrayEquals(single, parallel);
         } finally {
             Parallel.setThreads(before);
         }
-    }
-
-    @Test
-    void noiseIsReproducibleAndPsnrIsCorrect() {
-        GrayImage clean = flat(100, 100, 128);
-        GrayImage a = Noise.add(clean, Noise.Kind.SALT_PEPPER, 20, 1);
-        GrayImage b = Noise.add(clean, Noise.Kind.SALT_PEPPER, 20, 1);
-        assertArrayEquals(a.data(), b.data());
-        int changed = 0;
-        for (int v : a.data()) {
-            changed += v != 128 ? 1 : 0;
-        }
-        assertEquals(2000, changed, 200);
-        assertEquals(Double.POSITIVE_INFINITY, Quality.psnr(clean, clean));
-        GrayImage shifted = flat(100, 100, 138);
-        assertEquals(10 * Math.log10(255.0 * 255.0 / 100.0), Quality.psnr(clean, shifted), 1e-9);
     }
 }

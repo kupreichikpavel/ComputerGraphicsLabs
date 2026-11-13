@@ -3,7 +3,6 @@ package by.bsu.imageproc.processing;
 public enum WindowShape {
 
     SQUARE("Квадрат"),
-    CROSS("Крест"),
     DISK("Круг");
 
     private final String title;
@@ -13,21 +12,20 @@ public enum WindowShape {
     }
 
     public Window of(int radius) {
-        int r = Math.max(0, radius);
-        int[] from = new int[2 * r + 1];
-        int[] to = new int[2 * r + 1];
-        int count = 0;
-        for (int dy = -r; dy <= r; dy++) {
-            int half = switch (this) {
-                case SQUARE -> r;
-                case CROSS -> dy == 0 ? r : 0;
-                case DISK -> (int) Math.floor(Math.sqrt((r + 0.5) * (r + 0.5) - dy * dy));
-            };
-            from[dy + r] = -half;
-            to[dy + r] = half;
-            count += 2 * half + 1;
+        int r = Math.max(1, radius);
+        int[] dx = new int[(2 * r + 1) * (2 * r + 1)];
+        int[] dy = new int[dx.length];
+        int size = 0;
+        for (int y = -r; y <= r; y++) {
+            for (int x = -r; x <= r; x++) {
+                if (this == SQUARE || x * x + y * y <= (r + 0.5) * (r + 0.5)) {
+                    dx[size] = x;
+                    dy[size] = y;
+                    size++;
+                }
+            }
         }
-        return new Window(r, from, to, count);
+        return new Window(r, java.util.Arrays.copyOf(dx, size), java.util.Arrays.copyOf(dy, size));
     }
 
     @Override
@@ -35,10 +33,10 @@ public enum WindowShape {
         return title;
     }
 
-    public record Window(int radius, int[] from, int[] to, int size) {
+    public record Window(int radius, int[] dx, int[] dy) {
 
-        public boolean contains(int dx, int dy) {
-            return Math.abs(dy) <= radius && dx >= from[dy + radius] && dx <= to[dy + radius];
+        public int size() {
+            return dx.length;
         }
 
         public int side() {

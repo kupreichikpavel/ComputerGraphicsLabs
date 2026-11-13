@@ -1,9 +1,7 @@
 package by.bsu.imageproc.ui;
 
 import by.bsu.imageproc.buffer.EdgeMode;
-import by.bsu.imageproc.processing.LinearFilter;
 import by.bsu.imageproc.processing.Morphology;
-import by.bsu.imageproc.processing.Noise;
 import by.bsu.imageproc.processing.WindowShape;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
@@ -27,39 +25,19 @@ public final class ControlsPane extends ScrollPane {
     private final ComboBox<EdgeMode> edgeMode = new ComboBox<>();
     private final ComboBox<WindowShape> shape = new ComboBox<>();
     private final ComboBox<Morphology.Operation> operation = new ComboBox<>();
-    private final ComboBox<LinearFilter.Kind> linearKind = new ComboBox<>();
-    private final ComboBox<Noise.Kind> noise = new ComboBox<>();
-    private final CheckBox naive = new CheckBox("Наивный алгоритм (сортировка окна) — для сравнения скорости");
-    private final CheckBox stretch = new CheckBox("Растянуть результат на 0…255");
     private final CheckBox binarize = new CheckBox("Затем бинаризовать порогом Оцу");
 
     private final LabeledSlider radius = new LabeledSlider("Радиус окна r", 1, 60, 15,
             v -> String.format(Locale.ROOT, "%d (окно %d×%d)", (int) v, 2 * (int) v + 1, 2 * (int) v + 1), true);
-    private final LabeledSlider c = new LabeledSlider("Константа C", -20, 60, 15,
-            v -> String.format(Locale.ROOT, "%.0f", v), true);
     private final LabeledSlider k = new LabeledSlider("Коэффициент k", 0.05, 0.6, 0.2,
             v -> String.format(Locale.ROOT, "%.2f", v), false);
-    private final LabeledSlider prefilter = new LabeledSlider("Предварительный медианный фильтр", 0, 5, 0,
-            v -> v == 0 ? "нет" : String.format(Locale.ROOT, "%d×%d", 2 * (int) v + 1, 2 * (int) v + 1), true);
-    private final LabeledSlider filterRadius = new LabeledSlider("Радиус окна r", 1, 15, 1,
+    private final LabeledSlider filterRadius = new LabeledSlider("Радиус окна r", 1, 10, 1,
             v -> String.format(Locale.ROOT, "%d (%d×%d)", (int) v, 2 * (int) v + 1, 2 * (int) v + 1), true);
-    private final LabeledSlider trim = new LabeledSlider("Отбросить с каждой стороны ряда", 0, 45, 25,
-            v -> String.format(Locale.ROOT, "%.0f%%", v), true);
-    private final LabeledSlider percentile = new LabeledSlider("Процентиль p", 0, 100, 50,
-            v -> String.format(Locale.ROOT, "%.0f%%", v), true);
-    private final LabeledSlider maxRadius = new LabeledSlider("Максимальный размер окна Smax", 1, 10, 3,
-            v -> String.format(Locale.ROOT, "%d×%d", 2 * (int) v + 1, 2 * (int) v + 1), true);
-    private final LabeledSlider sigma = new LabeledSlider("σ Гаусса", 0.5, 5, 1,
-            v -> String.format(Locale.ROOT, "%.1f", v), false);
-    private final LabeledSlider noiseAmount = new LabeledSlider("Сила шума", 0, 60, 20,
-            v -> String.format(Locale.ROOT, "%.0f", v), true);
 
     private final Label edgeModeLabel = new Label("Обработка краёв изображения");
     private final Label noParams = new Label("Порог вычисляется автоматически по гистограмме.");
-    private final Label shapeLabel = new Label("Форма окна (структурирующий элемент)");
+    private final Label shapeLabel = new Label("Форма окна");
     private final Label operationLabel = new Label("Операция");
-    private final Label linearLabel = new Label("Фильтр");
-    private final Label description = new Label();
     private final Label resultInfo = new Label();
 
     private Runnable onChange = () -> {
@@ -68,27 +46,18 @@ public final class ControlsPane extends ScrollPane {
 
     public ControlsPane() {
         method.getItems().addAll(Method.values());
-        method.setValue(Method.MEDIAN);
+        method.setValue(Method.OTSU);
         edgeMode.getItems().addAll(EdgeMode.values());
         edgeMode.setValue(EdgeMode.REFLECT);
         shape.getItems().addAll(WindowShape.values());
         shape.setValue(WindowShape.SQUARE);
         operation.getItems().addAll(Morphology.Operation.values());
         operation.setValue(Morphology.Operation.TOP_HAT);
-        linearKind.getItems().addAll(LinearFilter.Kind.values());
-        linearKind.setValue(LinearFilter.Kind.BOX);
-        noise.getItems().addAll(Noise.Kind.values());
-        noise.setValue(Noise.Kind.NONE);
-        for (ComboBox<?> box : new ComboBox<?>[]{method, edgeMode, shape, operation, linearKind, noise}) {
+        for (ComboBox<?> box : new ComboBox<?>[]{method, edgeMode, shape, operation}) {
             box.setMaxWidth(Double.MAX_VALUE);
         }
-        for (CheckBox box : new CheckBox[]{naive, stretch, binarize}) {
-            box.setWrapText(true);
-        }
-        stretch.setSelected(true);
+        binarize.setWrapText(true);
 
-        description.setWrapText(true);
-        description.getStyleClass().add("description");
         resultInfo.setWrapText(true);
         resultInfo.getStyleClass().add("result-info");
         noParams.getStyleClass().add("muted");
@@ -98,15 +67,11 @@ public final class ControlsPane extends ScrollPane {
                 section("Метод"), method,
                 section("Параметры"), noParams,
                 edgeModeLabel, edgeMode,
-                radius, c, k, prefilter,
-                linearLabel, linearKind,
+                radius, k,
                 operationLabel, operation,
                 shapeLabel, shape,
-                filterRadius, trim, percentile, maxRadius, sigma,
-                naive, stretch, binarize,
-                section("Шум (добавляется к исходному)"), noise, noiseAmount,
-                section("Результат"), resultInfo,
-                section("Как работает"), description);
+                filterRadius, binarize,
+                section("Результат"), resultInfo);
         box.setPadding(new Insets(14));
         box.setFillWidth(true);
         box.setMaxWidth(Double.MAX_VALUE);
@@ -115,7 +80,7 @@ public final class ControlsPane extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         getStyleClass().add("controls");
         setMinWidth(330);
-        setPrefWidth(360);
+        setPrefWidth(350);
 
         ChangeListener<Object> changed = (obs, oldValue, newValue) -> {
             updateVisibility();
@@ -123,14 +88,11 @@ public final class ControlsPane extends ScrollPane {
                 onChange.run();
             }
         };
-        for (ComboBox<?> combo : new ComboBox<?>[]{method, edgeMode, shape, operation, linearKind, noise}) {
+        for (ComboBox<?> combo : new ComboBox<?>[]{method, edgeMode, shape, operation}) {
             combo.valueProperty().addListener(changed);
         }
-        for (CheckBox check : new CheckBox[]{naive, stretch, binarize}) {
-            check.selectedProperty().addListener(changed);
-        }
-        for (LabeledSlider s : new LabeledSlider[]{radius, c, k, prefilter, filterRadius, trim, percentile, maxRadius,
-                sigma, noiseAmount}) {
+        binarize.selectedProperty().addListener(changed);
+        for (LabeledSlider s : new LabeledSlider[]{radius, k, filterRadius}) {
             s.valueProperty().addListener(changed);
         }
         updateVisibility();
@@ -139,7 +101,6 @@ public final class ControlsPane extends ScrollPane {
     private static Label section(String text) {
         Label label = new Label(text);
         label.getStyleClass().add("section");
-        label.setWrapText(true);
         return label;
     }
 
@@ -151,18 +112,10 @@ public final class ControlsPane extends ScrollPane {
         silent = true;
         try {
             method.setValue(sample.method());
-            Sample.Preset p = sample.preset();
-            prefilter.setValue(p.prefilter());
-            filterRadius.setValue(p.filterRadius());
-            maxRadius.setValue(p.maxRadius());
-            trim.setValue(p.trim());
-            shape.setValue(p.shape());
-            operation.setValue(p.operation());
-            binarize.setSelected(p.binarize());
-            linearKind.setValue(p.linearKind());
-            naive.setSelected(false);
-            stretch.setSelected(true);
-            noise.setValue(Noise.Kind.NONE);
+            filterRadius.setValue(sample.filterRadius());
+            shape.setValue(sample.shape());
+            operation.setValue(sample.operation());
+            binarize.setSelected(sample.binarize());
         } finally {
             silent = false;
         }
@@ -174,45 +127,19 @@ public final class ControlsPane extends ScrollPane {
     }
 
     public Settings settings() {
-        return new Settings(method.getValue(), edgeMode.getValue(), (int) radius.value(), c.value(), k.value(),
-                (int) prefilter.value(), shape.getValue(), (int) filterRadius.value(), trim.value() / 100.0,
-                percentile.value(), (int) maxRadius.value(), operation.getValue(), stretch.isSelected(),
-                linearKind.getValue(), sigma.value(), naive.isSelected(), binarize.isSelected(), noise.getValue(),
-                noiseAmount.value());
+        return new Settings(method.getValue(), edgeMode.getValue(), (int) radius.value(), k.value(),
+                shape.getValue(), (int) filterRadius.value(), operation.getValue(), binarize.isSelected());
     }
 
     private void updateVisibility() {
         Method m = method.getValue();
         boolean global = m == Method.ITERATIVE || m == Method.OTSU;
-        boolean adaptive = m == Method.ADAPTIVE_MEAN || m == Method.ADAPTIVE_SAUVOLA;
-        boolean linear = m == Method.LINEAR;
-        boolean box = linear && linearKind.getValue() == LinearFilter.Kind.BOX;
-        boolean windowed = m.isRankFilter() || m == Method.MORPHOLOGY;
+        boolean filter = !m.isThreshold();
         show(global, noParams);
-        show(!global || prefilter.value() > 0, edgeModeLabel, edgeMode);
-        show(adaptive, radius);
-        show(m == Method.ADAPTIVE_MEAN, c);
-        show(m == Method.ADAPTIVE_SAUVOLA, k);
-        show(m.isThreshold(), prefilter);
-        show(linear, linearLabel, linearKind);
-        show(linear && !box, sigma);
+        show(!global, edgeModeLabel, edgeMode);
+        show(m == Method.ADAPTIVE_SAUVOLA, radius, k);
         show(m == Method.MORPHOLOGY, operationLabel, operation);
-        show(m == Method.MORPHOLOGY && operation.getValue().isDifference(), stretch);
-        show(windowed, shapeLabel, shape);
-        show(windowed || box, filterRadius);
-        show(m == Method.ALPHA_TRIMMED, trim);
-        show(m == Method.PERCENTILE, percentile);
-        show(m == Method.ADAPTIVE_MEDIAN, maxRadius);
-        show(m.isRankFilter(), naive);
-        show(!m.isThreshold(), binarize);
-        Noise.Kind kind = noise.getValue();
-        show(kind != Noise.Kind.NONE, noiseAmount);
-        noiseAmount.setTitle(switch (kind) {
-            case GAUSSIAN, UNIFORM -> "СКО шума σ, уровней яркости";
-            case MIXED -> "Доля импульсов, % (плюс гауссов σ = 12)";
-            default -> "Доля повреждённых пикселей, %";
-        });
-        description.setText(m.description());
+        show(filter, shapeLabel, shape, filterRadius, binarize);
     }
 
     private static void show(boolean visible, Node... nodes) {
@@ -225,7 +152,6 @@ public final class ControlsPane extends ScrollPane {
     static final class LabeledSlider extends VBox {
 
         private final Slider slider;
-        private final Label name;
 
         LabeledSlider(String title, double min, double max, double initial, DoubleFunction<String> format,
                       boolean integer) {
@@ -237,7 +163,7 @@ public final class ControlsPane extends ScrollPane {
                 slider.setSnapToTicks(true);
                 slider.setBlockIncrement(1);
             }
-            name = new Label(title);
+            Label name = new Label(title);
             name.setWrapText(true);
             name.setMinWidth(0);
             Label value = new Label(format.apply(initial));
@@ -256,10 +182,6 @@ public final class ControlsPane extends ScrollPane {
 
         void setValue(double v) {
             slider.setValue(v);
-        }
-
-        void setTitle(String title) {
-            name.setText(title);
         }
 
         javafx.beans.property.DoubleProperty valueProperty() {

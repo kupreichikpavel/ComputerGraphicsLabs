@@ -5,10 +5,8 @@ import by.bsu.imageproc.buffer.ColorImage;
 import by.bsu.imageproc.buffer.FxImages;
 import by.bsu.imageproc.buffer.GrayImage;
 import by.bsu.imageproc.processing.Histogram;
-import by.bsu.imageproc.processing.Noise;
 import by.bsu.imageproc.processing.Parallel;
 import by.bsu.imageproc.processing.Progress;
-import by.bsu.imageproc.processing.Quality;
 import by.bsu.imageproc.processing.Result;
 import by.bsu.imageproc.ui.ControlsPane;
 import by.bsu.imageproc.ui.HistogramView;
@@ -70,7 +68,6 @@ public class MainApp extends Application {
 
     private Stage stage;
     private GrayImage gray;
-    private GrayImage reference;
     private Result result;
     private Progress running;
     private long generation;
@@ -182,7 +179,6 @@ public class MainApp extends Application {
         samples.getSelectionModel().clearSelection();
         hint.setVisible(false);
         hint.setManaged(false);
-        reference = null;
         setImage(image, file.getName());
     }
 
@@ -193,14 +189,6 @@ public class MainApp extends Application {
                 return;
             }
             Image image = new Image(in);
-            reference = null;
-            if (sample.reference() != null) {
-                try (InputStream ref = MainApp.class.getResourceAsStream("samples/" + sample.reference())) {
-                    if (ref != null) {
-                        reference = GrayImage.fromArgb(FxImages.read(new Image(ref)));
-                    }
-                }
-            }
             hint.setText(sample.hint());
             hint.setVisible(true);
             hint.setManaged(true);
@@ -216,9 +204,6 @@ public class MainApp extends Application {
         gray = GrayImage.fromArgb(color);
         beforeView.setImage(image);
         beforeHistogram.show(Histogram.of(gray), null);
-        if (reference != null && (reference.width() != gray.width() || reference.height() != gray.height())) {
-            reference = null;
-        }
         status.setText(String.format(Locale.ROOT, "%s, %d×%d", name, gray.width(), gray.height()));
         process();
     }
@@ -233,8 +218,7 @@ public class MainApp extends Application {
         }
         long id = ++generation;
         Settings settings = controls.settings();
-        GrayImage clean = gray;
-        GrayImage sampleReference = reference;
+        GrayImage input = gray;
         Progress progress = new Progress(value -> Platform.runLater(() -> {
             if (id == generation) {
                 progressBar.setProgress(value);
@@ -244,22 +228,12 @@ public class MainApp extends Application {
         progressBar.setProgress(0);
         worker.submit(() -> {
             try {
-                boolean noisy = settings.noise() != Noise.Kind.NONE;
-                GrayImage input = noisy ? Noise.add(clean, settings.noise(), settings.noiseAmount(), Noise.SEED) : clean;
-                GrayImage ref = noisy ? clean : sampleReference;
                 long started = System.nanoTime();
                 Result r = Processor.run(input, settings, progress);
                 double ms = (System.nanoTime() - started) / 1e6;
-                String quality = "";
-                if (ref != null && !settings.method().isThreshold() && !settings.binarize()) {
-                    quality = String.format(Locale.ROOT, "\nPSNR относительно %s: до обработки %.2f дБ → после %.2f дБ",
-                            noisy ? "изображения без шума" : "эталона без шума",
-                            Quality.psnr(ref, input), Quality.psnr(ref, r.gray()));
-                }
-                String extra = quality;
                 Platform.runLater(() -> {
                     if (id == generation) {
-                        show(r, ms, input, extra);
+                        show(r, ms, input);
                     }
                 });
             } catch (Progress.CancelledException ignored) {
@@ -269,13 +243,12 @@ public class MainApp extends Application {
         });
     }
 
-    private void show(Result r, double ms, GrayImage input, String extra) {
+    private void show(Result r, double ms, GrayImage input) {
         result = r;
-        beforeView.setImage(FxImages.write(input.toColor()));
         afterView.setImage(FxImages.write(r.display()));
         afterHistogram.show(Histogram.of(r.gray()), null);
         beforeHistogram.show(Histogram.of(input), r.threshold());
-        controls.showResultInfo(r.info() + extra);
+        controls.showResultInfo(r.info());
         progressBar.setProgress(1);
         status.setText(String.format(Locale.ROOT, "%d×%d, обработка %.0f мс, потоков: %d",
                 input.width(), input.height(), ms, Parallel.threads()));

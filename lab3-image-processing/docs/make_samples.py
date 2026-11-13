@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-out = Path(sys.argv[1]); (out / "ref").mkdir(parents=True, exist_ok=True)
+out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
 rng = np.random.default_rng(2026)
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 TEXT = ("Пороговая обработка изображений. Глобальный порог выбирается по гистограмме "
@@ -78,10 +78,6 @@ mask = text_mask(w, h, 19)
 img = np.where(mask, light * 0.45, light) + rng.normal(0, 4, (h, w))
 save("05_adaptive_shadow_document.png", img)
 
-def save_pair(name, clean, noisy):
-    save(name + ".png", noisy)
-    save("ref/" + name + "_ref.png", clean)
-
 def impulses(img, density, salt_share=0.5):
     out = img.copy()
     hit = rng.random(img.shape) < density
@@ -109,56 +105,52 @@ def scene(w, h):
     d.text((int(w * 0.04), int(h * 0.02)), "Медиана сохраняет края", fill=20, font=ImageFont.truetype(FONT, max(16, h // 22)))
     return np.array(pil).astype(float)
 
-# 6. Импульсный шум 10% — медиана против усреднения
-clean = scene(640, 440)
-save_pair("06_salt_pepper_10", clean, impulses(clean, 0.10))
-
-# 7. Плотный импульсный шум 40% — адаптивная медиана
-save_pair("07_salt_pepper_40", clean, impulses(clean, 0.40))
-
-# 8. Только «соль» — фильтр минимума
-save_pair("08_salt_only", clean, impulses(clean, 0.08, 1.0))
-
-# 9. Только «перец» — фильтр максимума
-save_pair("09_pepper_only", clean, impulses(clean, 0.08, 0.0))
-
-def smooth_scene(w, h):
+def particles(w, h, sign):
     yy, xx = np.mgrid[0:h, 0:w]
-    img = 70 + 110 * xx / w + 15 * np.sin(yy / 35)
-    img[(xx - w * 0.25) ** 2 + (yy - h * 0.35) ** 2 < (h * 0.22) ** 2] = 205
-    img[int(h * 0.15):int(h * 0.55), int(w * 0.5):int(w * 0.72)] = 45
-    tri = (yy > h * 0.6) & (yy < h * 0.95) & (np.abs(xx - w * 0.3) < (yy - h * 0.6) * 0.8)
-    img[tri] = 170
-    img[(xx - w * 0.85) ** 2 + (yy - h * 0.75) ** 2 < (h * 0.15) ** 2] = 120
-    return img
+    img = 40 + 150 * np.exp(-(((xx - 180) / 260) ** 2 + ((yy - 160) / 200) ** 2)) + 40 * xx / w
+    if sign < 0:
+        img = 255 - img
+    for _ in range(90):
+        cx, cy = rng.integers(10, w - 10), rng.integers(10, h - 10)
+        r = rng.uniform(1.5, 4.0)
+        img[(xx - cx) ** 2 + (yy - cy) ** 2 <= r * r] += 45 * sign
+    return img + rng.normal(0, 3, (h, w))
 
-# 10. Равномерный шум — средняя точка
-smooth = smooth_scene(640, 440)
-half = 25 * np.sqrt(3)
-save_pair("10_uniform_noise", smooth, np.clip(smooth + rng.uniform(-half, half, smooth.shape), 0, 255))
+# 6. Импульсный шум 10% — медиана
+clean = scene(640, 440)
+save("06_salt_pepper.png", impulses(clean, 0.10))
 
-# 11. Гауссов + импульсный — усечённое среднее
-noisy = impulses(np.clip(smooth + rng.normal(0, 30, smooth.shape), 0, 255), 0.05)
-save_pair("11_mixed_noise", smooth, noisy)
+# 7. Только «соль» — фильтр минимума
+save("07_salt_only.png", impulses(clean, 0.08, 1.0))
 
-# 12. Мелкие светлые частицы на неоднородном фоне — Top-Hat
-h, w = 440, 640
+# 8. Только «перец» — фильтр максимума
+save("08_pepper_only.png", impulses(clean, 0.08, 0.0))
+
+# 9. Светлые частицы на неоднородном фоне — Top-Hat
+save("09_tophat_particles.png", particles(640, 440, 1))
+
+# 10. Тёмные пятна на неоднородном фоне — Black-Hat
+save("10_blackhat_spots.png", particles(640, 440, -1))
+
+# 11. Фигуры — морфологический градиент
+h, w = 420, 620
 yy, xx = np.mgrid[0:h, 0:w]
-img = 40 + 150 * np.exp(-(((xx - 180) / 260) ** 2 + ((yy - 160) / 200) ** 2)) + 40 * xx / w
-for _ in range(90):
-    cx, cy = rng.integers(10, w - 10), rng.integers(10, h - 10)
-    r = rng.uniform(1.5, 4.0)
-    img[(xx - cx) ** 2 + (yy - cy) ** 2 <= r * r] += 45
-img += rng.normal(0, 3, (h, w))
-save("12_tophat_particles.png", img)
+img = np.full((h, w), 110.0)
+img[(xx - 140) ** 2 + (yy - 140) ** 2 < 95 ** 2] = 210
+img[60:220, 280:440] = 40
+tri = (yy > 260) & (yy < 390) & (np.abs(xx - 520) < (yy - 260) * 0.6)
+img[tri] = 190
+ring = ((xx - 200) ** 2 + (yy - 320) ** 2 < 75 ** 2) & ((xx - 200) ** 2 + (yy - 320) ** 2 > 40 ** 2)
+img[ring] = 30
+img[300:400, 330:420] = 160
+save("11_gradient_shapes.png", img + rng.normal(0, 2, (h, w)))
 
-# 13. Зашумлённый документ — медиана, затем порог Оцу
+# 12. Зашумлённый документ — медиана, затем порог Оцу
 h, w = 420, 640
 mask = text_mask(w, h, 24, font="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
-clean = np.where(mask, 40.0, 225.0)
-save_pair("13_noisy_document", clean, impulses(clean + rng.normal(0, 4, (h, w)), 0.12))
+save("12_noisy_document.png", impulses(np.where(mask, 40.0, 225.0) + rng.normal(0, 4, (h, w)), 0.12))
 
-# 14. Большое изображение для проверки скорости и многопоточности
+# 13. Большое изображение для проверки скорости и многопоточности
 h, w = 3000, 4000
 yy, xx = np.mgrid[0:h, 0:w]
 light = 80 + 150 * (xx / w)
@@ -167,5 +159,5 @@ mask = text_mask(w, h, 48, margin=120, repeat=40)
 big[mask] = light[mask] * 0.4
 for cx, cy, r in [(900, 2300, 380), (2600, 2200, 450), (3500, 600, 300)]:
     big[(xx - cx) ** 2 + (yy - cy) ** 2 < r * r] = 30
-save("14_large_4000x3000.png", impulses(big, 0.10))
-for p in sorted(out.rglob("*.png")): print(p.relative_to(out), Image.open(p).size, p.stat().st_size // 1024, "KB")
+save("13_large_4000x3000.png", impulses(big, 0.10))
+for p in sorted(out.iterdir()): print(p.name, Image.open(p).size, p.stat().st_size // 1024, "KB")

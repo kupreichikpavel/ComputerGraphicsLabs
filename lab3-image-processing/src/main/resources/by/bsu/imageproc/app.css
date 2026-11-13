@@ -59,7 +59,7 @@
     -fx-font-weight: bold;
 }
 
-.description, .muted {
+.muted {
     -fx-text-fill: #4a5562;
     -fx-font-size: 12px;
 }

@@ -12,26 +12,6 @@ public final class AdaptiveThreshold {
     private AdaptiveThreshold() {
     }
 
-    public static Result meanMinusC(GrayImage image, int radius, double c, EdgeMode mode, Progress progress) {
-        progress.stages(2);
-        IntegralImage sat = IntegralImage.build(image, radius, mode);
-        progress.nextStage();
-        int width = image.width();
-        int area = sat.windowArea();
-        int[] src = image.data();
-        int[] dst = new int[src.length];
-        Parallel.rows(image.height(), progress, y -> {
-            for (int x = 0; x < width; x++) {
-                double mean = (double) sat.windowSum(x, y) / area;
-                dst[y * width + x] = src[y * width + x] > mean - c ? 255 : 0;
-            }
-        });
-        int size = 2 * radius + 1;
-        return Result.gray(new GrayImage(width, image.height(), dst), null,
-                String.format(Locale.ROOT, "Окно %d×%d, T(x, y) = m(x, y) − %.1f; среднее окна за O(1) через интегральное изображение",
-                        size, size, c));
-    }
-
     public static Result sauvola(GrayImage image, int radius, double k, EdgeMode mode, Progress progress) {
         progress.stages(2);
         IntegralImage sat = IntegralImage.build(image, radius, mode);
