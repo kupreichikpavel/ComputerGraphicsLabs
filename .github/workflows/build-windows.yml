@@ -27,7 +27,7 @@ jobs:
           - project: lab3-image-processing
             app-name: ImageProcessing
             main-class: by.bsu.imageproc.Launcher
-            description: "Thresholding and segmentation"
+            description: "Thresholding and order-statistic filters"
 
     steps:
       - name: Checkout repository
